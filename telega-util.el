@@ -1017,6 +1017,21 @@ Return nil if STR does not specify an org mode link."
     (list :@type "textParseModeMarkdown"
           :version 1))))
 
+(eval-when-compile
+  (when (< emacs-major-version 28)
+    (require 'macroexp)
+    (gv-define-expander plist-get
+      (lambda (do plist prop)
+        (macroexp-let2 macroexp-copyable-p key prop
+          (gv-letplace (getter setter) plist
+            (macroexp-let2 nil p `(cdr (plist-member ,getter ,key))
+              (funcall do
+                       `(car ,p)
+                       (lambda (val)
+                         `(if ,p
+                              (setcar ,p ,val)
+                            ,(funcall setter `(cons ,key (cons ,val ,getter)))))))))))))
+
 (defun telega-markup-markdown2-fmt (str)
   (let ((fmt-text (telega--parseMarkdown (telega-fmt-text str)))
         (offset-shift 0))
